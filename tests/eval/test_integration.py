@@ -143,6 +143,7 @@ def test_integration_tool_output_handling_sees_queued_not_processed(world: dict)
         "note": "amount is above the $100 auto-approval threshold; a human support agent will review it",
     }
     fake = FakeModel()
+    fake.set_next_output([tool_call("get_order", {"order_id": 4455})])
     fake.set_next_output(
         [tool_call("issue_refund", {"order_id": 4455, "amount_usd": 240.0, "reason": "cracked"})]
     )
@@ -158,7 +159,7 @@ def test_integration_tool_output_handling_sees_queued_not_processed(world: dict)
             context=SHOPPER_1,
         )
 
-    outputs = _function_call_outputs(fake.requests[1]["input"])
+    outputs = _function_call_outputs(fake.requests[2]["input"])
     assert outputs, "the tool result never reached the model"
     joined = " ".join(outputs)
     assert "queued_for_approval" in joined
@@ -172,6 +173,7 @@ def test_integration_scripted_refund_writes_the_real_end_state(world_copy: Path)
     world: order #4127 ($84, eligible, under the threshold) ends refunded
     with an auto_approved refund row. State-based grading, mocked model."""
     fake = FakeModel()
+    fake.set_next_output([tool_call("get_order", {"order_id": 4127})])
     fake.set_next_output(
         [tool_call("issue_refund", {"order_id": 4127, "amount_usd": 84.0, "reason": "leaking base"})]
     )

@@ -354,7 +354,10 @@ def search_help_center(
 @function_tool
 def get_order(wrapper: RunContextWrapper[AuthContext], order_id: int) -> dict[str, Any]:
     """Look up one order by id, including its refund eligibility."""
-    return _call(wrapper, get_order_logic, order_id)
+    result = _call(wrapper, get_order_logic, order_id)
+    if result.get("ok"):
+        wrapper.context.looked_up_orders.add(order_id)
+    return result
 
 
 def _issue_refund_impl(
@@ -363,6 +366,14 @@ def _issue_refund_impl(
     """Shared refund tool body. Wrapped twice below: once plainly (default,
     Module 1 behavior) and once with ``needs_approval`` when ``defenses=True``.
     Keeping the body in one function means the two tool objects never drift."""
+    if order_id not in wrapper.context.looked_up_orders:
+        result = {
+            "ok": False,
+            "error": "order_not_looked_up",
+            "reason": f"call get_order for order #{order_id} and check its refund eligibility first",
+        }
+        record_tool_result(wrapper.context, result)
+        return result
     return _call(wrapper, issue_refund_logic, order_id, amount_usd, reason)
 
 

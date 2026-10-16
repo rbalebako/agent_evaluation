@@ -15,7 +15,7 @@ Tool-result convention used across the repo:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 ROLES = ("shopper", "merchant", "support")
@@ -32,6 +32,10 @@ class AuthContext:
     user_id: int
     role: str
     store_id: int | None = None
+    # Orders the session has successfully looked up; mutable on a frozen context.
+    looked_up_orders: set[int] = field(
+        default_factory=set, compare=False, hash=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         if self.role not in ROLES:
